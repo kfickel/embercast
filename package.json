@@ -1,0 +1,28 @@
+{
+  "name": "library-api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Katherine F <katherine.fickel@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js",
+    "start:dev": "nodemon index.js",
+    "db:create": "sequelize-esm db:create"
+  },
+  "dependencies": {
+    "@koa/cors": "^2.2.2",
+    "dotenv": "^6.0.0",
+    "esm": "^3.0.71",
+    "koa": "^2.5.2",
+    "koa-bodyparser": "^4.2.1",
+    "koa-logger": "^3.2.0",
+    "koa-router": "^7.4.0",
+    "pg": "^7.4.3",
+    "pg-hstore": "^2.3.2",
+    "sequelize": "^4.38.0",
+    "sequelize-cli-esm": "^5.0.6"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.2"
+  }
+}
