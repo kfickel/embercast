@@ -7,14 +7,18 @@ import config from './config/app';
 import router from './routes/index';
 import db from './models/index';
 import errorMiddlware from './errors/middleware';
+import serialize from './resources/index';
+import getAttributes from './middleware/get-attributes';
 
 const app = new Koa();
 app.db = db;
+app.serialize = serialize;
 
 app.use(errorMiddlware);
 app.use(logger());
 app.use(cors());
 app.use(bodyParser());
+app.use(getAttributes);
 
 app.use(router.allowedMethods());
 app.use(router.routes());

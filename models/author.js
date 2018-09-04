@@ -4,5 +4,10 @@ export default (sequelize, DataTypes) => {
     last: DataTypes.STRING
   });
 
+  Author.associate = function(models) {
+    Author.hasMany(models.Book);
+    Author.belongsTo(models.User);
+  };
+
   return Author;
 }

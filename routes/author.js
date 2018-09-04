@@ -1,57 +1,63 @@
 import Router from 'koa-router';
-import NotFoundError from '../errors/not-found';
+import Sequelize from 'sequelize';
+import currentUser from '../middleware/current-user';
 
 const router = new Router();
 
-const serialize = (model) => {
-  return {
-    type: 'authors',
-    id: model.id,
-    attributes: {
-      first: model.first,
-      last: model.last
-    },
-    links: {
-      self: `/authors/${model.id}`
-    }
-  };
-}
-
 router.get('/', async (ctx) =>  {
-  const authors = await ctx.app.db.Author.findAll();
+  const query = ctx.query['filter[query]'];
+  let authors;
 
-  ctx.body = { data: authors.map(serialize) };
+  if (query) {
+    authors = await ctx.app.db.Author.findAll({
+      where: {
+        [Sequelize.Op.or]: [
+          { first: { [Sequelize.Op.iLike]: `%${query}%` } },
+          { last: { [Sequelize.Op.iLike]: `%${query}%` } },
+        ]
+      }
+    });
+  } else {
+    authors = await ctx.app.db.Author.findAll(); 
+  }
+
+  ctx.body = ctx.app.serialize('author', authors);
 });
 
 router.get('/:id', async (ctx) => {
   const id = ctx.params.id;
   const author = await ctx.app.db.Author.findOrFail(id);
 
-  if (author === null) {
-    throw new NotFoundError('Author', id);
-  }
-
-  ctx.body = { data: serialize(author) };
+  ctx.body = ctx.app.serialize('author', author);
 });
 
-router.post('/', async (ctx) => {
-  const attrs = ctx.request.body.data.attributes;
+router.get('/:id/books', async (ctx) => {
+  const id = ctx.params.id;
+  const author = await ctx.app.db.Author.findOrFail(id);
+  const books = await author.getBooks();
+
+  ctx.body = ctx.app.serialize('book', books);
+});
+
+router.post('/', currentUser, async (ctx) => {
+  const attrs = ctx.getAttributes();
+  attrs.UserId = ctx.currentUser.id;
   const author = await ctx.app.db.Author.create(attrs);
 
   ctx.status = 201;
   ctx.set('Location', `/authors/${author.id}`);
-  ctx.body = { data: serialize(author) };
+  ctx.body = ctx.app.serialize('author', author);
 });
 
 router.patch('/:id', async (ctx) => {
-  const attrs = ctx.request.body.data.attributes;
+  const attrs = ctx.getAttributes();
   const id = ctx.params.id;
   const author = await ctx.app.db.Author.findOrFail(id);
 
   author.set(attrs);
   await author.save();
 
-  ctx.body = { data: serialize(author) };
+  ctx.body = ctx.app.serialize('author', author);
 });
 
 router.del('/:id', async (ctx) => {

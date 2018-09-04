@@ -1,4 +1,7 @@
 import NotFoundError from './not-found';
+import { ValidationError, UniqueConstraintError } from 'sequelize';
+import { underscore, dasherize } from 'inflected';
+import UnauthorizedError from './unauthorized';
 
 export default async (ctx, next) => {
   try {
@@ -17,8 +20,40 @@ export default async (ctx, next) => {
             }
           ]
         };
+      case UnauthorizedError:
+        ctx.status = 401;
 
+        return ctx.body = {
+          errors: [
+            {
+              status: 401,
+              title: 'Unauthorized',
+              detail: err.message
+            }
+          ]
+        };
+      case UniqueConstraintError: 
+      case ValidationError:
+        ctx.status = 422;
+
+        return ctx.body = {
+          errors: err.errors.map((valError) => {
+            const attr = dasherize(underscore(valError.path));
+            const title = valError.validatorKey === 'notEmpty' ?
+              `${attr} can't be blank` : 
+              valError.message;
+            return {
+              status: 422,
+              code: 100,
+              title,
+              source: {
+                pointer: `/data/attributes/${attr}`
+              }
+            };
+          })
+        };
       default:
+        // debugger;
         ctx.status = 500;
 
         return ctx.body = {
